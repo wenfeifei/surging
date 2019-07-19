@@ -11,6 +11,7 @@ using Surging.Core.KestrelHttpServer.Filters;
 using Surging.Core.KestrelHttpServer.Filters.Implementation;
 using System.Threading.Tasks;
 using Autofac;
+using System;
 
 namespace Surging.Core.Stage.Filters
 {
@@ -21,16 +22,16 @@ namespace Surging.Core.Stage.Filters
         {
             _authorizationServerProvider = ServiceLocator.Current.Resolve<IAuthorizationServerProvider>();
         }
-        public void OnAuthorization(AuthorizationFilterContext filterContext)
+        public async Task OnAuthorization(AuthorizationFilterContext filterContext)
         {
-            if (filterContext.Route.ServiceDescriptor.EnableAuthorization())
+            if (filterContext.Route!=null && filterContext.Route.ServiceDescriptor.EnableAuthorization())
             {
                 if (filterContext.Route.ServiceDescriptor.AuthType() == AuthorizationType.JWT.ToString())
                 {
                     var author = filterContext.Context.Request.Headers["Authorization"];
                     if (author.Count > 0)
                     {
-                        var isSuccess = _authorizationServerProvider.ValidateClientAuthentication(author).Result;
+                        var isSuccess =await _authorizationServerProvider.ValidateClientAuthentication(author);
                         if (!isSuccess)
                         {
                             filterContext.Result = new HttpResultMessage<object> { IsSucceed = false, StatusCode = (int)ServiceStatusCode.AuthorizationFailed, Message = "Invalid authentication credentials" };
@@ -44,6 +45,9 @@ namespace Surging.Core.Stage.Filters
 
                 }
             }
+            var gatewayAppConfig = AppConfig.Options.ApiGetWay;
+            if (String.Compare(filterContext.Path.ToLower(), gatewayAppConfig.TokenEndpointPath, true) == 0)
+                filterContext.Context.Items.Add("path", gatewayAppConfig.AuthorizationRoutePath);
 
         }
     }

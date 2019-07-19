@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Surging.Core.CPlatform.Module;
 using Surging.Core.KestrelHttpServer;
@@ -62,6 +63,31 @@ namespace Surging.Core.Stage
                 ApiGateWay.AppConfig.AuthorizationRoutePath = apiConfig.AuthorizationRoutePath;
                 ApiGateWay.AppConfig.TokenEndpointPath = apiConfig.TokenEndpointPath;
             }
+            context.Services.AddMvc().AddJsonOptions(options => {
+                options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+                if (AppConfig.Options.IsCamelCaseResolver)
+                {
+                    JsonConvert.DefaultSettings= new Func<JsonSerializerSettings>(() =>
+                    {
+                       JsonSerializerSettings setting = new Newtonsoft.Json.JsonSerializerSettings();
+                        setting.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+                        setting.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                        return setting;
+                    });
+                    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                }
+                else
+                {
+                    JsonConvert.DefaultSettings = new Func<JsonSerializerSettings>(() =>
+                    {
+                        JsonSerializerSettings setting = new JsonSerializerSettings();
+                        setting.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+                        setting.ContractResolver= new DefaultContractResolver();
+                        return setting;
+                    });
+                    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+                }
+            });
             context.Services.AddFilters(typeof(AuthorizationFilterAttribute));
             context.Services.AddFilters(typeof(ActionFilterAttribute));
         }
