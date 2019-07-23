@@ -95,7 +95,7 @@ namespace Surging.Core.KestrelHttpServer
         }
 
         public void ConfigureServices(IServiceCollection services)
-        {
+        { 
             var builder = new ContainerBuilder();
             services.AddMvc();
             _moduleProvider.ConfigureServices(new ConfigurationContext(services,
@@ -115,17 +115,14 @@ namespace Surging.Core.KestrelHttpServer
                 AppConfig.Configuration));
             app.Run(async (context) =>
             {
-               await Task.Run(async () =>
+                var filters = app.ApplicationServices.GetServices<IAuthorizationFilter>();
+                var sender = new HttpServerMessageSender(_serializer, context);
+                var isSuccess = await OnAuthorization(context, sender, filters);
+                if (isSuccess)
                 {
-                    var filters = app.ApplicationServices.GetServices<IAuthorizationFilter>();
-                    var sender = new HttpServerMessageSender(_serializer, context);
-                    var isSuccess = await OnAuthorization(context, sender, filters);
-                    if (isSuccess)
-                    {
-                        var actionFilters = app.ApplicationServices.GetServices<IActionFilter>();
-                        await OnReceived(sender, context, actionFilters);
-                    }
-                });
+                    var actionFilters = app.ApplicationServices.GetServices<IActionFilter>();
+                    await OnReceived(sender, context, actionFilters);
+                }
             });
         }
 
