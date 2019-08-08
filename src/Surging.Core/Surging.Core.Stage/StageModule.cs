@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -29,13 +30,13 @@ namespace Surging.Core.Stage
         }
 
         public override void RegisterBuilder(WebHostContext context)
-        {
+        {  
             _listener.Listen(context);
         }
 
         public override void Initialize(ApplicationInitializationContext context)
         {
-            var policy = AppConfig.Options.Policy;
+            var policy = AppConfig.Options.AccessPolicy;
             if (policy != null)
             {
                 context.Builder.UseCors(builder =>
@@ -90,8 +91,10 @@ namespace Surging.Core.Stage
                 }
             });
             context.Services.AddSingleton<IHttpContextAccessor,HttpContextAccessor>();
+            context.Services.AddSingleton<IIPChecker,IPAddressChecker>();
             context.Services.AddFilters(typeof(AuthorizationFilterAttribute));
             context.Services.AddFilters(typeof(ActionFilterAttribute));
+            context.Services.AddFilters(typeof(IPFilterAttribute));
         }
 
         protected override void RegisterBuilder(ContainerBuilderWrapper builder)
@@ -102,6 +105,7 @@ namespace Surging.Core.Stage
             {
                 AppConfig.Options = section.Get<StageOption>();
             }
+            
             builder.RegisterType<WebServerListener>().As<IWebServerListener>().SingleInstance(); 
         }
     }
