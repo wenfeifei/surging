@@ -15,7 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
-using Surging.Core.CPlatform.Validation;
+using Surging.Core.CPlatform.Validation; 
+using Metadatas=Surging.Core.ProxyGenerator.Interceptors.Implementation.Metadatas;
 
 namespace Surging.IModuleServices.Common
 {
@@ -67,6 +68,8 @@ namespace Surging.IModuleServices.Common
         [Authorization(AuthType = AuthorizationType.JWT)]
         [Command(Strategy = StrategyType.Injection, ShuntStrategy = AddressSelectorMode.HashAlgorithm, ExecutionTimeoutInMilliseconds = 1500, BreakerRequestVolumeThreshold = 3, Injection = @"return 1;", RequestCacheEnabled = false)]
         [InterceptMethod(CachingMethod.Get, Key = "GetUserId_{0}", CacheSectionType = SectionType.ddlCache, L2Key= "GetUserId_{0}",  EnableL2Cache = true, Mode = CacheTargetType.Redis, Time = 480)]
+        [Metadatas.ServiceCacheIntercept(Metadatas.CachingMethod.Get, Key = "GetUserId_{0}", CacheSectionType = "ddlCache", L2Key= "GetUserId_{0}",  EnableL2Cache = true, Mode = Metadatas.CacheTargetType.Redis, Time = 480)]
+       [Metadatas.ServiceLogIntercept()]
         [ServiceRoute("{userName}")]
         Task<int> GetUserId(string userName);
 
@@ -91,6 +94,7 @@ new Surging.IModuleServices.Common.Models.UserModel
             Age=19
          };", RequestCacheEnabled = true, InjectionNamespaces = new string[] { "Surging.IModuleServices.Common" })]
         [InterceptMethod(CachingMethod.Get, Key = "GetUser_id_{0}", CacheSectionType = SectionType.ddlCache, Mode = CacheTargetType.Redis, Time = 480)]
+        [Metadatas.ServiceCacheIntercept(Metadatas.CachingMethod.Get, Key = "GetUser_{0}_{1}", L2Key = "GetUser_{0}_{1}",EnableL2Cache =true, CacheSectionType = "ddlCache", Mode = Metadatas.CacheTargetType.Redis, Time = 480)]
         [Validate]
         Task<UserModel> GetUser(UserModel user);
 
@@ -180,5 +184,8 @@ new Surging.IModuleServices.Common.Models.UserModel
         /// </summary>
         /// <returns></returns>
         Task<Dictionary<string, object>> GetAllThings();
+
+        [Metadatas.ServiceCacheIntercept(Metadatas.CachingMethod.Remove, "GetUser_{0}_{1}", CacheSectionType ="ddlCache", Mode = Metadatas.CacheTargetType.Redis)]
+        public Task<bool> RemoveUser(UserModel user);
     }
 }
